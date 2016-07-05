@@ -7,9 +7,15 @@ Created on Mon Jul 04 16:03:50 2016
 import numpy as np
 
 class NativeBayes(object):
-    def __init__(self, eta=0.01, n_iter=10):
-        self.eta = eta
-        self.n_iter = n_iter
+    
+    '''
+    
+    没有解决的问题：
+        1. 训练样本没有包含全部的特征空间怎么办？这样就没有办法获得全部的条件概率表
+        2. 测试数据中的特征没有在训练数据中怎样处理？目前没有处理，测试训练数据中不存在的特征会报错
+    '''
+    def __init__(self, lamuda=1):
+        self.lamuda_ = lamuda
     
     def CheckData(X,y):
         return True
@@ -18,6 +24,8 @@ class NativeBayes(object):
     
     X = [n_samples,n_features]
     y = [n_samples]
+    
+    最大似然估计
     '''
     def fit(self, X, y):
         self.n_samples_ = X.shape[0] #样本数量
@@ -47,7 +55,44 @@ class NativeBayes(object):
                     
                     
         return self
+        
+    '''训练过程
     
+    X = [n_samples,n_features]
+    y = [n_samples]
+    当self.lamuda_取值为0的时候，就是最大似然估计
+    贝叶斯估计
+    '''
+    def fitBayes(self, X, y):
+        self.n_samples_ = X.shape[0] #样本数量
+        self.n_features_ = X.shape[1] #特征的维数
+        self.labels_ = np.unique(y)  #去重之后的类别数组
+        self.n_labels_ = self.labels_.shape[0]  #共有多少种类别
+        self.pyck_ = np.zeros(self.n_labels_)
+        #1. 计算各个类别的先验概率
+        for i in range(self.n_labels_):
+            self.pyck_[i] = ( np.sum( y == self.labels_[i] ) + self.lamuda_ ) / ( float(self.n_samples_) + self.n_labels_ * self.lamuda_ )
+            
+        #2. 计算类别确定下，取各个特征值的条件概率
+        XX = np.transpose(X)
+        self.feature_range_ = []  # 每一维特征的可能取值的集合
+        for feature in XX:  #每个feature是一维特征
+            self.feature_range_.append(np.unique(feature))
+            
+        self.P_ = np.zeros((self.n_labels_,self.n_features_,self.n_samples_))  #存储条件概率表
+        
+        for i in range(self.n_labels_):        # i表示类别
+            for j in range(self.n_features_):      #j表示第j个特征
+                aa = XX[j][y == self.labels_[i]]  #提取出类别i对应的特征
+                subn = aa.shape[0] # 属于类ck[i]的第j维特征的 个数的和。
+                uaa = np.unique(aa)
+                for k in range(len(uaa)):            #k表示第j维特征取第K个值
+                    self.P_[i][j][k] = ( np.sum( aa == uaa[k] ) + self.lamuda_ ) / ( float(subn) + len(uaa) * self.lamuda_)
+                    
+                    
+        return self
+    
+   
     '''预测过程
     
     X = [n_features]
@@ -71,21 +116,24 @@ class NativeBayes(object):
     
     '''
     def look(self):
+        print '人取值： %s' % self.lamuda_
         print '训练样本：%d' % self.n_samples_
         print '特征维数：%d' % self.n_features_
+        print '特征空间：%s' % self.feature_range_
         print '类别数量:%d'  % self.n_labels_
         print '类别:%s' % self.labels_
         print '类别的先验概率：%s' % self.pyck_
         print '条件概率表：%s' % self.P_
 
-X = [[1,1,1,1,1,2,2,2,2,2,3,3,3,3,3],[11,23,22,11,11,11,22,22,33,33,33,22,22,33,33]]
+X = [[1,1,1,1,1,2,2,2,2,2,3,3,3,3,3],[11,22,22,11,11,11,22,22,33,33,33,22,22,33,33]]
 X = map(list, zip(*X)) #list的转置
 X = np.array(X,dtype=float)
 y = np.array([-1,-1,1,1,-1,-1,-1,1,1,1,1,1,1,1,-1])
 
-NB = NativeBayes()
-NB.fit(X,y)
+NB = NativeBayes(lamuda=1)
+NB.fitBayes(X,y)
 NB.predict(np.array([2,11]))
+NB.look()
 
 
 
