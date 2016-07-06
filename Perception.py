@@ -6,16 +6,25 @@ Created on Tue Jul 05 19:38:00 2016
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 class Perception(object):
     
+    '''
+    ita range in  (0,1]
+    '''
     def __init__(self, ita=1):
         self.ita_ = ita
     
     '''
     
-    李航-统计学习方法-第二章-感知机-例题
+    李航-统计学习方法-第二章-感知机-例题 -- 原始形式
     学习到的是一个分类的平面，所以能够预测在训练集中没有出现过的特征。
+    
+    感知机得到的结果不唯一，与初始参数w,b的选择和每次选择的点有关，这里初始的w,b选择的都是0，
+    每次选择第一个误分类点迭代w,b，得到的结果和书上的例题结果一致。
+    实际中，通常使用随机选择的方法。
     '''
     def fit(self,X,y):
         self.n_samples_ = X.shape[0]
@@ -26,6 +35,7 @@ class Perception(object):
         #初始化        
         w = np.zeros(self.n_features_)
         b = 0
+        
         i = 0
         while i < self.n_samples_:
             if y[i] * (np.dot(w,X[i]) + b) <= 0:
@@ -35,7 +45,39 @@ class Perception(object):
                 self.parameters_.append((w,b))
             else:
                 i = i + 1
-                
+    
+    '''感知机算法的对偶形式
+    
+    X = [n_samples,n_features]
+    y = [n_samples,]
+    '''
+    def fitPair(self,X,y):
+        self.n_samples_ = X.shape[0]
+        self.n_features_ = X.shape[1]
+        self.labels_ = np.unique(y)
+        self.n_lables_ = self.labels_.shape[0]
+        self.parameters_ = []
+        
+        gram = np.dot(X,np.transpose(X))
+        aerfa = np.zeros(self.n_samples_)
+        b = 0
+        
+        i = 0
+#        while i < self.n_samples_:
+#            sum = np.zeros(self.n_samples_)
+#            for j in range(self.n_samples_):
+#                sum += y[j] * np.dot( aerfa,gram[j] )
+#            if y[i] * ( np.dot(sum,gram[i]) + b) <= 0:
+#                aerfa = aerfa + self.ita_
+#                b = b + self.ita_ * y[i]
+#                self.parameters_.append((aerfa,b))
+#                i = 0
+#                print i
+#            else:
+#                i = i + 1
+#                print i
+            
+            
     def sign(self,x):
         if x>=0:
             return 1
@@ -51,14 +93,40 @@ class Perception(object):
     def look(self):
         for line in self.parameters_:
             print 'w:%s    b: %s'% (line[0],line[1])
+    
+        
+    '''针对二维特征的计算过程可视化
+    
+    '''
+    def lookGraph(self,X,y):
+        markers = ('s', 'o', 'x', '^', 'v')
+        colors = ('red', 'blue', 'lightgreen', 'gray', 'cyan')
+        
+        # 绘制特征的散点图
+        for idx, cl in enumerate(np.unique(y)):
+            plt.scatter(x=X[y==cl, 0], y=X[y==cl, 1], marker=markers[idx],
+                    alpha=.8, c=colors[idx], 
+                    label=np.where(cl==1, 'positive', 'negative'))
+        # 训练模型，获得参数
+        #self.fit(X,y)
+        # 绘制每一步迭代过程得到的直线
+        self.data = [] 
+        for w,b in self.parameters_:
+            xx = np.linspace(np.min(X[:,0]), np.max(X[:,0]), 10) 
+            yy = - ( (w[0]/w[1]) * xx + b / w[1])
+            self.data.append((xx,yy))
+            plt.plot(xx,yy,color="red",linewidth=1)  
+            
+        plt.show()
+        #添加分类直线的动态绘制过程
+        #....
         
 X = np.array([[3,3],[4,3],[1,1]])
 y = np.array([1,1,-1])    
 
-p = Perception()
+p = Perception(ita=1)
 p.fit(X,y)
-print p.f_
-print p.predict(np.array([-100,1]))
+p.lookGraph(X,y)
 
 
 
