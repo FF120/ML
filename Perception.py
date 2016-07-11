@@ -77,7 +77,9 @@ class Perception(object):
 #                i = i + 1
 #                print i
             
-            
+    '''符号函数
+
+    '''     
     def sign(self,x):
         if x>=0:
             return 1
@@ -89,13 +91,71 @@ class Perception(object):
         self.f_ = np.dot(self.w_,X) + self.b_
         return self.sign(self.f_)
         
-
+    '''查看训练得到的参数
+    
+    '''
     def look(self):
         for line in self.parameters_:
             print 'w:%s    b: %s'% (line[0],line[1])
     
         
     '''针对二维特征的计算过程可视化
+    
+    '''
+    def update_line(self,num,data,line):
+        line.set_xdata(data[num][0])
+        line.set_ydata(data[num][1])
+        return line,
+    
+    '''动态呈现分类直线的变化过程
+    
+    '''
+    def lookAnimotionGraph(self,X,y,repeat=False,interval=400):
+        markers = ('s', 'o', 'x', '^', 'v')
+        colors = ('red', 'blue', 'lightgreen', 'gray', 'cyan')
+        
+        fig1 = plt.figure()
+        # 绘制特征的散点图
+        for idx, cl in enumerate(np.unique(y)):
+            plt.scatter(x=X[y==cl, 0], y=X[y==cl, 1], marker=markers[idx],
+            alpha=.8, c=colors[idx], label=np.where(cl==1, 'positive', 'negative'))
+        # 训练模型，获得参数
+        #self.fit(X,y)
+        # 绘制每一步迭代过程得到的直线
+        self.data = [] 
+        l, = plt.plot([], [], 'r-')
+        x = []
+        y = []
+        for w,b in self.parameters_:
+            xx = np.linspace(np.min(X[:,0]), np.max(X[:,0]), 10) 
+            if (w[0] == 0 and w[1] == 0):
+                yy = b
+            elif  w[1] == 0:
+                yy = b / float( w[1] )
+            elif  w[0] == 0:
+                yy = b
+            else:
+                yy = - ( (w[0]/w[1]) * xx + b / w[1])
+            x.append(np.min(xx))
+            x.append(np.max(xx))
+            y.append(np.max(yy))
+            y.append(np.min(yy))
+            self.data.append((xx,yy))
+        #设置坐标轴的取值范围
+        x = np.array(x)
+        x_min = np.min(np.array([np.min(x),np.min(X[:,0])]))
+        x_max = np.max(np.array([np.max(x),np.max(X[:,0])]))
+        y = np.array(y)
+        y_min = np.min(np.array([np.min(y),np.min(X[:,1])]))
+        y_max = np.max(np.array([np.max(y),np.max(X[:,1])]))
+        plt.xlim(x_min-0.3*x_min,x_max+0.3*x_max)
+        plt.ylim(y_min-0.3*y_min,y_max+0.3*y_max)
+        
+        line_ani = animation.FuncAnimation(fig1, self.update_line, len(self.data), fargs=(self.data, l),
+           interval=interval, blit=True,repeat=repeat)  
+        plt.show()
+    
+    '''静态绘制所有直线
     
     '''
     def lookGraph(self,X,y):
@@ -113,7 +173,14 @@ class Perception(object):
         self.data = [] 
         for w,b in self.parameters_:
             xx = np.linspace(np.min(X[:,0]), np.max(X[:,0]), 10) 
-            yy = - ( (w[0]/w[1]) * xx + b / w[1])
+            if (w[0] == 0 and w[1] == 0):
+                yy = np.linspace(b,b,10)
+            elif  w[1] == 0:
+                yy = np.linspace(b / float( w[1] ), b / float( w[1] ) ,10)
+            elif  w[0] == 0:
+                yy = np.linspace(b,b,10)
+            else:
+                yy = - ( (w[0]/w[1]) * xx + b / w[1])
             self.data.append((xx,yy))
             plt.plot(xx,yy,color="red",linewidth=1)  
             
@@ -124,9 +191,18 @@ class Perception(object):
 X = np.array([[3,3],[4,3],[1,1]])
 y = np.array([1,1,-1])    
 
+from sklearn.datasets import load_iris
+iris = load_iris()
+X = iris.data
+y = iris.target
+X = X[0:100,0:2]
+y = y[0:100]
+
 p = Perception(ita=1)
 p.fit(X,y)
-p.lookGraph(X,y)
+p.lookAnimotionGraph(X,y)
+
+
 
 
 

@@ -23,6 +23,8 @@ class DecisionTree(object):
         for i in range(len(labels)):
             hd += - ( ( counts[i] / float(x.shape[0]) ) * math.log( (counts[i] / float(x.shape[0])),2 ) )
         return hd
+        
+        
     '''计算互信息
     信息增益g(D,A)=H(D)-H(D|A)
     H(D)是整个训练集上类别的熵
@@ -51,6 +53,8 @@ class DecisionTree(object):
         self.gda_ = self.hd_ - np.array(self.hda_)
         max_feature = np.argmax( self.gda_ )
         return max_feature
+        
+        
     '''生成测试数据
     青年 1；中年 2；老年 3；
     有工作 1；无工作 0；
@@ -81,6 +85,8 @@ class DecisionTree(object):
         X = np.array(X)
         y = np.array(y)
         return X,y
+
+
 
 dt = DecisionTree()
 '''
